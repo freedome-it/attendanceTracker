@@ -1,3 +1,4 @@
 /node_modules
 /generated
 employees.json
+.DS_Store
