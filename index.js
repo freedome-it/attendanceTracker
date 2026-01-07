@@ -55,6 +55,7 @@ const grayFill = {
 
 async function generateAttendanceXlsx() {
     const workbook = new ExcelJS.Workbook();
+    let daysFromStartOfYear = yearStartsOn;
 
     for (const month of Object.keys(monthsAndDays)) {
         const daysInMonth = monthsAndDays[month];
@@ -63,7 +64,7 @@ async function generateAttendanceXlsx() {
         for (const employee of employees) {
             // month + weekday row
             const monthRow = sheet.addRow(
-                compileMonthAndDayRow(month, daysInMonth, year, yearStartsOn)
+                compileMonthAndDayRow(month, daysInMonth, year, daysFromStartOfYear)
             );
 
             monthRow.eachCell(cell => {
@@ -124,6 +125,8 @@ async function generateAttendanceXlsx() {
         sheet.columns.forEach((col, index) => {
             col.width = index < 1 ? 24 : 6;
         });
+
+        daysFromStartOfYear += daysInMonth;
     }
 
     const outputPath = path.join(
@@ -141,14 +144,14 @@ generateAttendanceXlsx();
 // HELPERS
 // =======================
 
-function compileMonthAndDayRow(month, daysInMonth, year, yearStartsOn) {
+function compileMonthAndDayRow(month, daysInMonth, year, daysFromStartOfYear) {
     const row = [`${month}-${year}`];
 
     row.push('');
 
     // FIXME: the day name starts from the wrong weekday
     for (let i = 0; i < daysInMonth; i++) {
-        row.push(daysNames[(yearStartsOn + i) % 7]);
+        row.push(daysNames[(daysFromStartOfYear + i) % 7]);
     }
 
     return row;
