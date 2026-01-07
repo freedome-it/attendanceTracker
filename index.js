@@ -26,6 +26,14 @@ const daysNames = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 const year = '2026';
 const yearStartsOn = 3; // 0 = monday
 
+let SWDaysStart = {
+    first: 3,
+    second:4,
+    dir: 'bw' // 'bw' = backward, 'fw' = forward
+}
+
+let SWDaysUpdate = { ...SWDaysStart };
+
 // =======================
 // STYLES
 // =======================
@@ -110,10 +118,12 @@ async function generateAttendanceXlsx() {
             ];
 
             for (const label of statusRows) {
-                const row = sheet.addRow([label]);
+                const row = label === 'Smart'
+                    ? sheet.addRow(compileSmartWorkingRow(daysInMonth, daysFromStartOfYear))
+                    : sheet.addRow([label]);
 
                 row.eachCell(cell => {
-                    cell.alignment = { vertical: 'middle' };
+                    cell.alignment = { vertical: 'middle' , horizontal: 'center'};
                 });
             }
 
@@ -125,7 +135,8 @@ async function generateAttendanceXlsx() {
         sheet.columns.forEach((col, index) => {
             col.width = index < 1 ? 24 : 6;
         });
-
+        
+        SWDaysStart = { ...SWDaysUpdate };
         daysFromStartOfYear += daysInMonth;
     }
 
@@ -164,5 +175,50 @@ function compileNameAndDateRow(name, code, monthsAndDays, month) {
         row.push(i + 1);
     }
 
+    return row;
+}
+
+function compileSmartWorkingRow(daysInMonth, daysFromStartOfYear) {
+    const row = ['Smart'];
+    
+    row.push('');
+
+    let SWDays = { ...SWDaysStart };
+    
+    for (let i = 0; i < daysInMonth; i++) {
+        const currentDayOfWeek = (daysFromStartOfYear + i) % 7;
+
+
+        if (currentDayOfWeek === SWDays.first || currentDayOfWeek === SWDays.second) {
+            row.push('X');
+        } else {
+            row.push('');
+        }
+
+        // Update SWDays with 'Ping Pong' logic
+        if (currentDayOfWeek === 6) { // Sunday
+            if (SWDays.dir === 'bw') {
+                if(SWDays.first === 0){
+                    SWDays.first++;
+                    SWDays.second++;
+                    SWDays.dir = 'fw';
+                }else{
+                    SWDays.first--;
+                    SWDays.second--;
+                }
+            }
+            else if (SWDays.dir === 'fw') {
+                if(SWDays.first === 3){
+                    SWDays.first--;
+                    SWDays.second--;
+                    SWDays.dir = 'bw';
+                }else{
+                    SWDays.first++;
+                    SWDays.second++;
+                }
+            }
+        }
+    }
+    SWDaysUpdate = {...SWDays}
     return row;
 }
