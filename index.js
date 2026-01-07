@@ -26,7 +26,7 @@ const daysNames = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 const year = '2026';
 const yearStartsOn = 3; // 0 = monday
 
-const companyHolidays = {
+const companyClosures = {
     gennaio: [1, 2, 5, 6],
     febbraio: [],
     marzo: [],
@@ -38,7 +38,7 @@ const companyHolidays = {
     settembre: [],
     ottobre: [],
     novembre: [1],
-    dicembre: [8, 25, 26, 28, 29, 30, 31]
+    dicembre: [7, 8, 25, 26, 28, 29, 30, 31]
 }
 
 let SWDaysStart = {
@@ -135,7 +135,9 @@ async function generateAttendanceXlsx() {
             for (const label of statusRows) {
                 const row = label === 'Smart'
                     ? sheet.addRow(compileSmartWorkingRow(month, daysInMonth, daysFromStartOfYear))
-                    : sheet.addRow([label]);
+                    : label === 'Chiusura aziendale' 
+                        ? sheet.addRow(compileCompanyClosureRow(month, daysInMonth))
+                        : sheet.addRow([label]);
 
                 row.eachCell(cell => {
                     cell.alignment = { vertical: 'middle'};
@@ -205,7 +207,7 @@ function compileSmartWorkingRow(month, daysInMonth, daysFromStartOfYear) {
 
 
         if (currentDayOfWeek === SWDays.first || currentDayOfWeek === SWDays.second) {
-            if(companyHolidays[month].includes(i + 1)){
+            if(companyClosures[month].includes(i + 1)){
                 row.push('');
             }else{
                 row.push('X');
@@ -239,5 +241,21 @@ function compileSmartWorkingRow(month, daysInMonth, daysFromStartOfYear) {
         }
     }
     SWDaysUpdate = {...SWDays}
+    return row;
+}
+
+function compileCompanyClosureRow(month, daysInMonth) {
+    const row = ['Chiusura aziendale'];
+
+    row.push('');
+    
+    for (let i = 0; i < daysInMonth; i++) {
+        if (companyClosures[month].includes(i + 1)) {
+            row.push('X');
+        } else {
+            row.push('');
+        }
+    }
+
     return row;
 }
