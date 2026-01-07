@@ -77,93 +77,109 @@ const grayFill = {
 // =======================
 
 async function generateAttendanceXlsx() {
-    const workbook = new ExcelJS.Workbook();
-    let daysFromStartOfYear = yearStartsOn;
-
-    for (const month of Object.keys(monthsAndDays)) {
-        const daysInMonth = monthsAndDays[month];
-        const sheet = workbook.addWorksheet(`${month} ${year}`);
-
-        for (const employee of employees) {
-            // month + weekday row
-            const monthRow = sheet.addRow(
-                compileMonthAndDayRow(month, daysInMonth, year, daysFromStartOfYear)
-            );
-
-            monthRow.eachCell(cell => {
-                cell.font = headerFont;
-                cell.alignment = centerAlignment;
-            });
-
-            // name + day numbers row
-            const employeeRow = sheet.addRow(
-                compileNameAndDateRow(
-                    employee.name,
-                    employee.code,
-                    monthsAndDays,
-                    month
-                )
-            );
-
-            // name
-            employeeRow.getCell(1).font = headerFont;
-            employeeRow.getCell(1).fill = yellowFill;
-
-            // code
-            employeeRow.getCell(2).font = headerFont;
-            employeeRow.getCell(2).fill = yellowFill;
-            employeeRow.getCell(2).alignment = centerAlignment;
-
-            // day numbers
-            employeeRow.eachCell((cell, colNumber) => {
-                if (colNumber >= 3) {
-                    cell.fill = grayFill;
+    for (const team in employees) {
+        const workbook = new ExcelJS.Workbook();
+        let daysFromStartOfYear = yearStartsOn;
+    
+        for (const month of Object.keys(monthsAndDays)) {
+            const daysInMonth = monthsAndDays[month];
+            const sheet = workbook.addWorksheet(`${month} ${year}`);
+    
+            for (const employee of employees[team]) {
+                // month + weekday row
+                const monthRow = sheet.addRow(
+                    compileMonthAndDayRow(month, daysInMonth, year, daysFromStartOfYear)
+                );
+    
+                monthRow.eachCell(cell => {
+                    cell.font = headerFont;
                     cell.alignment = centerAlignment;
-                }
-            });
-
-            const statusRows = [
-                'Lavorato',
-                'Smart',
-                'Ferie',
-                'R.O.L.',
-                'Malattia',
-                'Chiusura aziendale',
-                'Varie'
-            ];
-
-            for (const label of statusRows) {
-                const row = label === 'Smart'
-                    ? sheet.addRow(compileSmartWorkingRow(month, daysInMonth, daysFromStartOfYear))
-                    : label === 'Chiusura aziendale' 
-                        ? sheet.addRow(compileCompanyClosureRow(month, daysInMonth))
-                        : sheet.addRow([label]);
-
-                row.eachCell(cell => {
-                    cell.alignment = { vertical: 'middle'};
                 });
+    
+                // name + day numbers row
+                const employeeRow = sheet.addRow(
+                    compileNameAndDateRow(
+                        employee.name,
+                        employee.code,
+                        monthsAndDays,
+                        month
+                    )
+                );
+    
+                // name
+                employeeRow.getCell(1).font = headerFont;
+                employeeRow.getCell(1).fill = yellowFill;
+    
+                // code
+                employeeRow.getCell(2).font = headerFont;
+                employeeRow.getCell(2).fill = yellowFill;
+                employeeRow.getCell(2).alignment = centerAlignment;
+    
+                // day numbers
+                employeeRow.eachCell((cell, colNumber) => {
+                    if (colNumber >= 3) {
+                        cell.fill = grayFill;
+                        cell.alignment = centerAlignment;
+                    }
+                });
+    
+                const statusRows = [
+                    'Lavorato',
+                    'Smart',
+                    'Ferie',
+                    'R.O.L.',
+                    'Malattia',
+                    'Chiusura aziendale',
+                    'Varie'
+                ];
+    
+                for (const label of statusRows) {
+                    const row = label === 'Smart'
+                        ? sheet.addRow(compileSmartWorkingRow(month, daysInMonth, daysFromStartOfYear))
+                        : label === 'Chiusura aziendale' 
+                            ? sheet.addRow(compileCompanyClosureRow(month, daysInMonth))
+                            : sheet.addRow([label]);
+    
+                    row.eachCell(cell => {
+                        cell.alignment = { vertical: 'middle'};
+                    });
+                }
+    
+                // empty row between employees
+                sheet.addRow([]);
             }
+    
+            // column sizing
+            sheet.columns.forEach((col, index) => {
+                col.width = index < 1 ? 24 : 6;
+            });
+            
+            SWDaysStart = { ...SWDaysUpdate };
+            daysFromStartOfYear += daysInMonth;
+        }
+    
+        const outputPath = path.join(
+            __dirname,
+            'generated',
+            team,
+            `attendance_${year}.xlsx`
+        );
 
-            // empty row between employees
-            sheet.addRow([]);
+        // Create directory structure if it doesn't exist
+        const outputDir = path.dirname(outputPath);
+        fs.mkdirSync(outputDir, { recursive: true });
+        
+        await workbook.xlsx.writeFile(outputPath);
+
+        // Reset SWDaysStart for next team
+        SWDaysStart = {
+            first: 3,
+            second:4,
+            dir: 'bw' // 'bw' = backward, 'fw' = forward
         }
 
-        // column sizing
-        sheet.columns.forEach((col, index) => {
-            col.width = index < 1 ? 24 : 6;
-        });
-        
-        SWDaysStart = { ...SWDaysUpdate };
-        daysFromStartOfYear += daysInMonth;
+        SWDaysUpdate = { ...SWDaysStart };
     }
-
-    const outputPath = path.join(
-        __dirname,
-        'generated',
-        `attendance_${year}.xlsx`
-    );
-
-    await workbook.xlsx.writeFile(outputPath);
 }
 
 generateAttendanceXlsx();
@@ -177,7 +193,6 @@ function compileMonthAndDayRow(month, daysInMonth, year, daysFromStartOfYear) {
 
     row.push('');
 
-    // FIXME: the day name starts from the wrong weekday
     for (let i = 0; i < daysInMonth; i++) {
         row.push(daysNames[(daysFromStartOfYear + i) % 7]);
     }
