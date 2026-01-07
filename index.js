@@ -24,7 +24,7 @@ const monthsAndDays = {
 const daysNames = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 
 const year = '2026';
-const yearStartsOn = 3; // 0 = Monday
+const yearStartsOn = 3; // 0 = monday
 
 // =======================
 // STYLES
@@ -49,13 +49,6 @@ const grayFill = {
     fgColor: { argb: 'FFD9D9D9' }
 };
 
-const thinBorder = {
-    top: { style: 'thin' },
-    left: { style: 'thin' },
-    bottom: { style: 'thin' },
-    right: { style: 'thin' }
-};
-
 // =======================
 // MAIN
 // =======================
@@ -65,10 +58,10 @@ async function generateAttendanceXlsx() {
 
     for (const month of Object.keys(monthsAndDays)) {
         const daysInMonth = monthsAndDays[month];
-        const sheet = workbook.addWorksheet(`${month}-${year}`);
+        const sheet = workbook.addWorksheet(`${month} ${year}`);
 
         for (const employee of employees) {
-            // Month + weekday row
+            // month + weekday row
             const monthRow = sheet.addRow(
                 compileMonthAndDayRow(month, daysInMonth, year, yearStartsOn)
             );
@@ -76,10 +69,9 @@ async function generateAttendanceXlsx() {
             monthRow.eachCell(cell => {
                 cell.font = headerFont;
                 cell.alignment = centerAlignment;
-                cell.border = thinBorder;
             });
 
-            // Name + day numbers row
+            // name + day numbers row
             const employeeRow = sheet.addRow(
                 compileNameAndDateRow(
                     employee.name,
@@ -89,27 +81,23 @@ async function generateAttendanceXlsx() {
                 )
             );
 
-            // Name
+            // name
             employeeRow.getCell(1).font = headerFont;
             employeeRow.getCell(1).fill = yellowFill;
-            employeeRow.getCell(1).border = thinBorder;
 
-            // Code
+            // code
             employeeRow.getCell(2).font = headerFont;
             employeeRow.getCell(2).fill = yellowFill;
             employeeRow.getCell(2).alignment = centerAlignment;
-            employeeRow.getCell(2).border = thinBorder;
 
-            // Day numbers
+            // day numbers
             employeeRow.eachCell((cell, colNumber) => {
                 if (colNumber >= 3) {
                     cell.fill = grayFill;
                     cell.alignment = centerAlignment;
                 }
-                cell.border = thinBorder;
             });
 
-            // Status rows
             const statusRows = [
                 'Lavorato',
                 'Smart',
@@ -124,18 +112,17 @@ async function generateAttendanceXlsx() {
                 const row = sheet.addRow([label]);
 
                 row.eachCell(cell => {
-                    cell.border = thinBorder;
                     cell.alignment = { vertical: 'middle' };
                 });
             }
 
-            // Empty row between employees
+            // empty row between employees
             sheet.addRow([]);
         }
 
-        // Column sizing
+        // column sizing
         sheet.columns.forEach((col, index) => {
-            col.width = index < 2 ? 18 : 4;
+            col.width = index < 1 ? 24 : 6;
         });
     }
 
@@ -157,7 +144,10 @@ generateAttendanceXlsx();
 function compileMonthAndDayRow(month, daysInMonth, year, yearStartsOn) {
     const row = [`${month}-${year}`];
 
-    for (let i = 0; i <= daysInMonth; i++) {
+    row.push('');
+
+    // FIXME: the day name starts from the wrong weekday
+    for (let i = 0; i < daysInMonth; i++) {
         row.push(daysNames[(yearStartsOn + i) % 7]);
     }
 
@@ -167,14 +157,8 @@ function compileMonthAndDayRow(month, daysInMonth, year, yearStartsOn) {
 function compileNameAndDateRow(name, code, monthsAndDays, month) {
     const row = [name, code];
 
-    let previousMonthsDays = 0;
-    for (const m of Object.keys(monthsAndDays)) {
-        if (m === month) break;
-        previousMonthsDays += monthsAndDays[m];
-    }
-
     for (let i = 0; i < monthsAndDays[month]; i++) {
-        row.push(previousMonthsDays + i + 1);
+        row.push(i + 1);
     }
 
     return row;
