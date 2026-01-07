@@ -26,6 +26,21 @@ const daysNames = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 const year = '2026';
 const yearStartsOn = 3; // 0 = monday
 
+const companyHolidays = {
+    gennaio: [1, 2, 5, 6],
+    febbraio: [],
+    marzo: [],
+    aprile: [3, 5, 6, 25],
+    maggio: [1],
+    giugno: [2],
+    luglio: [],
+    agosto: [15, 16],
+    settembre: [],
+    ottobre: [],
+    novembre: [1],
+    dicembre: [8, 25, 26, 28, 29, 30, 31]
+}
+
 let SWDaysStart = {
     first: 3,
     second:4,
@@ -119,11 +134,11 @@ async function generateAttendanceXlsx() {
 
             for (const label of statusRows) {
                 const row = label === 'Smart'
-                    ? sheet.addRow(compileSmartWorkingRow(daysInMonth, daysFromStartOfYear))
+                    ? sheet.addRow(compileSmartWorkingRow(month, daysInMonth, daysFromStartOfYear))
                     : sheet.addRow([label]);
 
                 row.eachCell(cell => {
-                    cell.alignment = { vertical: 'middle' , horizontal: 'center'};
+                    cell.alignment = { vertical: 'middle'};
                 });
             }
 
@@ -178,7 +193,7 @@ function compileNameAndDateRow(name, code, monthsAndDays, month) {
     return row;
 }
 
-function compileSmartWorkingRow(daysInMonth, daysFromStartOfYear) {
+function compileSmartWorkingRow(month, daysInMonth, daysFromStartOfYear) {
     const row = ['Smart'];
     
     row.push('');
@@ -190,7 +205,11 @@ function compileSmartWorkingRow(daysInMonth, daysFromStartOfYear) {
 
 
         if (currentDayOfWeek === SWDays.first || currentDayOfWeek === SWDays.second) {
-            row.push('X');
+            if(companyHolidays[month].includes(i + 1)){
+                row.push('');
+            }else{
+                row.push('X');
+            }
         } else {
             row.push('');
         }
